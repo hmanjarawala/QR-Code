@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+ <head>
+   <title>Generate QR-Code</title>
+ </head>
+ <body>
+
+   {% if msg %}
+   <h1>{{ msg }}</h1>
+   {% endif %}
+  
+   <h1>UGenerate new QR-Code</h1>
+  
+   <form method=post enctype=multipart/form-data>
+     <p><input type=input name=qrstring>
+        <input type=submit value=Generate>
+   </form>
+
+   <h1>Result:</h1>
+   {% if img_src %}
+     <img src="{{ img_src }}">
+   {% endif %}
+   
+ </body>
+</html>
