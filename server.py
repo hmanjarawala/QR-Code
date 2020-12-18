@@ -7,9 +7,15 @@ Created on Thu Dec 17 16:18:20 2020
 
 import tempfile
 from flask import Flask, render_template, request, Response, jsonify
-from os.path import join
+from os.path import join, dirname, basename
+import QRCodeScanner
 import QRCode
 
+# define a folder to store and later serve the images
+UPLOAD_FOLDER = join(dirname(__file__), 'static','uploads')
+
+# allow files of a specific type
+ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 
 app = Flask(__name__)
 
@@ -63,6 +69,49 @@ def generate_upi_qrcode():
         
         return generate_upi_string(vpa, name, amount, merchant_code, currency, trRef, trNotes, refUri)
 
+@app.route("/api/v1/scanqr", methods=["POST"])
+def scan_qr():
+    
+    if "file" not in request.files:
+        return create_error_json_message("No QR-Code image/pdf found to scan!!!", 500)
+    
+    files = request.files.getlist("file")
+    
+    res = []
+    for file in files:
+        if  file:
+            
+            # if no file is selected
+            if file.filename == '':
+                return create_error_json_message('No file selected', 500)
+            
+            filename = UPLOAD_FOLDER + "\sample." + get_extension(file.filename)
+            
+            with open(filename, "wb") as f:
+                f.write(file.read())
+                
+            if allowed_pdf_file(filename):
+                found, scan_qrs = QRCodeScanner.scan_pdf(filename)
+            elif allowed_image_file(filename):
+                found, scan_qrs = QRCodeScanner.scan_image(filename)
+            else:
+                return create_error_json_message("Invalid file to scan!!!", 500)
+            
+        if found:
+            res.append({"filename": basename(file.filename), "reesults":scan_qrs})
+    
+    return jsonify(res)
+
+def get_extension(filename):
+    return filename.rsplit('.', 1)[1] if '.' in filename else ''
+
+# function to check the file extension
+def allowed_image_file(filename):
+    return get_extension(filename).lower() in ALLOWED_EXTENSIONS
+
+# function to check the file extension
+def allowed_pdf_file(filename):
+    return get_extension(filename).lower() == "pdf"
     
 def generate_upi_string(vpa, name, amount, merchant_code=None, currency="INR", trRef=None, 
                         trNotes=None, refUri=None):
