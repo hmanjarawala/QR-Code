@@ -85,17 +85,18 @@ def scan_qr():
             if file.filename == '':
                 return create_error_json_message('No file selected', 500)
             
-            filename = UPLOAD_FOLDER + "\sample." + get_extension(file.filename)
-            
-            with open(filename, "wb") as f:
-                f.write(file.read())
+            with tempfile.TemporaryDirectory() as path:
+                filename = path + "\sample." + get_extension(file.filename)            
                 
-            if allowed_pdf_file(filename):
-                found, scan_qrs = QRCodeScanner.scan_pdf(filename)
-            elif allowed_image_file(filename):
-                found, scan_qrs = QRCodeScanner.scan_image(filename)
-            else:
-                return create_error_json_message("Invalid file to scan!!!", 500)
+                with open(filename, "wb") as f:
+                    f.write(file.read())
+                
+                if allowed_pdf_file(filename):
+                    found, scan_qrs = QRCodeScanner.scan_pdf(filename)
+                elif allowed_image_file(filename):
+                    found, scan_qrs = QRCodeScanner.scan_image(filename)
+                else:
+                    return create_error_json_message("Invalid file to scan!!!", 500)
             
         if found:
             res.append({"filename": basename(file.filename), "reesults":scan_qrs})
